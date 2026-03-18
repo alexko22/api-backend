@@ -1,10 +1,10 @@
 // controller logic...
-// to do next: validation, error handling
 
 const db = require('../config/db')
 // password hashing...
 const bcrypt = require('bcrypt')
 
+// REGISTRATION
 const registerUser = async (req, res) => {
   const { first_name, last_name, email, password } = req.body
 
@@ -82,7 +82,14 @@ const registerUser = async (req, res) => {
   }
   })
 
-// placeholding try block originally here... debugging
 }
+
+// To-do: Login Implementation...
   
+
+
+
+
+
+// export
 module.exports = { registerUser }
