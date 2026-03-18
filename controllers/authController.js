@@ -46,10 +46,7 @@ const registerUser = async (req, res) => {
             error_message: 'An account with this email already exists.'
         })
     }
-  })
-
-  // bringing into a try to ensure success/catch errors...
-  try {
+      try {
       // hashing complexity...
     const hashed_password = await bcrypt.hash(password, 8)
 
@@ -83,6 +80,9 @@ const registerUser = async (req, res) => {
         error_message: 'An internal error occured when securing your password!'
     })
   }
+  })
+
+// placeholding try block originally here... debugging
 }
   
 module.exports = { registerUser }
