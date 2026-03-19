@@ -70,3 +70,5 @@ A more robust design would allow endpoints to derive the acting user from authen
 ### Final Note
 Special thanks to everyone at Giftogram who took the time to speak with me and review my code!!!
 
+---
+
