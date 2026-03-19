@@ -267,7 +267,58 @@ const sendMessage = (req, res) => {
 }
 
 // to-do: list users logic (other than user who calls this)
+const listUsers = (req, res) =>  {
+    const { requester_id } = req.query
+
+    // error case 1: no requester id was provided (only one element)
+    if (!requester_id) {
+        return res.status(400).json({
+            error_code: 501,
+            error_title: 'Requester Validation Error',
+            error_message: 'You must provide the user who is requesting!',
+        })
+    }
+
+    // check if they exist like before...
+    const requesterCheck = 'SELECT id FROM users WHERE id = ?'
+    db.query(requesterCheck, [requester_id], (err, users) => {
+        if (err) {
+            return res.status(500).json({
+                error_code: 502,
+                error_title: 'Internal Location Error',
+                error_message: 'An internal error occured when confirming your profile. Try again!',
+            })
+        }
+
+        // ensure one user was returned by the query (the requester)
+        if (users.length != 1) {
+            return res.status(500).json({
+                error_code: 503,
+                error_title: 'User Does Not Exist',
+                error_message: 'This user does not exist... please try again!',
+            })
+        }
+
+        const listQuery = ` SELECT id, first_name, last_name, email, time_created FROM users WHERE id != ? `
+        // inside original query again to prevent double err code
+        db.query(listQuery, [requester_id], (err, res2) => {
+            if (err) {
+                return res.status(500).json({
+                    error_code: 504,
+                    error_title: 'Internal Query Error',
+                    error_message: 'An internal error occured when trying to load users. Try again!',
+                })
+            }
+
+            // else success
+            return res.status(200).json({
+                success: true,
+                users: res2
+            })
+        })
+    })
+}
 
 
 // export
-module.exports = { registerUser, loginUser, viewMessages, sendMessage }
+module.exports = { registerUser, loginUser, viewMessages, sendMessage, listUsers }
