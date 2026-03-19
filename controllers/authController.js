@@ -84,7 +84,38 @@ const registerUser = async (req, res) => {
 
 }
 
-// To-do: Login Implementation...
+// Login Implementation...
+const loginUser = async (req, res) => {
+    const { email, password } = req.body
+
+    // error case 1: missing username or password
+    if (!email || !password) {
+        return res.status(400).json({
+            error_code: 201,
+            error_title: 'Validation Error',
+            error_message: 'Could not locate your username or password. Both are required!'
+        })
+    }
+
+    // error case 2: email invalid (not an email)
+    if (!email.includes('@')) {
+        return res.status(500).json({
+            error_code: 202,
+            error_title: 'Invalid Email Address',
+            error_message: 'This is not a valid email. Email must contain @ character'
+        })
+    }
+
+    // try to log in and match to existing account (test email and password)
+    const loginQuery = 'SELECT * FROM users WHERE email = ?'
+
+
+
+
+
+
+
+}
   
 
 
