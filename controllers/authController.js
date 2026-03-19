@@ -1,37 +1,39 @@
-// controller logic...
+// controllers/authController.js | alexko22222@gmail.com
+// controller file to define the logic for each endpoint...
 
 const db = require('../config/db')
-// password hashing...
+
+// bcrypt for password hashing...
 const bcrypt = require('bcrypt')
 
-// REGISTRATION
+// registration logic...
 const registerUser = async (req, res) => {
   const { first_name, last_name, email, password } = req.body
 
-  // first potential error: missing an element
+  // first potential error: missing an element entirely
   if (!first_name || !last_name || !email || !password) {
     return res.status(400).json({
         error_code: 101,
-        error_title: 'Validation Error',
+        error_title: 'Data Validation Error',
         error_message: 'Could not locate one or more of first name, last name, email, and password. All are required!'
     })
   }
 
-  // second potential error: not a valid email (doesn't contain @)
+  // second potential error: not a valid email address (doesn't contain @)
   if (!email.includes('@')) {
     return res.status(400).json({
         error_code: 102,
-        error_title: 'Invalid Email Adress',
-        error_message: 'Valid email adresses would contain an @ character.'
+        error_title: 'Invalid Email Address',
+        error_message: 'Valid email addresses would contain an @ character. Try again!'
     })
   }
 
   // third potential error: user with said email already exists...
-  // checking db for previous user account
+  // checking db for previous user account instance
   const emailQuery = 'SELECT id FROM users WHERE email = ?'
   db.query(emailQuery, [email], async (err, res2) => {
     if (err) {
-        // using 500 again cuz its not users fault per say...
+        // using 500 again cuz its not users fault per say... (vs 400 where it is)
         return res.status(500).json({
             error_code: 103,
             error_title: 'Internal Query Error',
@@ -42,23 +44,24 @@ const registerUser = async (req, res) => {
     if (res2.length > 0) {
         return res.status(400).json({
             error_code: 104,
-            error_title: 'Duplicate Email Error',
-            error_message: 'An account with this email already exists.'
+            error_title: 'Duplicate Account Error',
+            error_message: 'An account with this email already exists!'
         })
     }
       try {
-      // hashing complexity...
+
+    // hashing complexity...
     const hashed_password = await bcrypt.hash(password, 8)
 
-    // inserting into db...
-    // ? -> prevents SQL injection attacks
+    // sql query for inserting into db...
+    // decided on ? -> prevents SQL injection attacks
     const query = `
         INSERT INTO users (first_name, last_name, email, hashed_password)
         VALUES (?, ?, ?, ?)
     `
     // queries the database as specified...
     db.query(query, [first_name, last_name, email, hashed_password], (err, result) => {
-        // error handling... to be expanded upon...
+        // error handling... internal error
         if (err) {
             return res.status(500).json({
                 error_code: 103,
@@ -81,10 +84,9 @@ const registerUser = async (req, res) => {
     })
   }
   })
-
 }
 
-// Login Implementation...
+// login logic...
 const loginUser = async (req, res) => {
     const { email, password } = req.body
 
@@ -93,7 +95,7 @@ const loginUser = async (req, res) => {
         return res.status(400).json({
             error_code: 201,
             error_title: 'Validation Error',
-            error_message: 'Could not locate your username or password. Both are required!'
+            error_message: 'Could not locate your username or password. Both are required elements!'
         })
     }
 
@@ -102,7 +104,7 @@ const loginUser = async (req, res) => {
         return res.status(400).json({
             error_code: 202,
             error_title: 'Invalid Email Address',
-            error_message: 'This is not a valid email. Email must contain @ character'
+            error_message: 'This is not a valid email. Email must contain @ character!'
         })
     }
 
@@ -137,15 +139,14 @@ const loginUser = async (req, res) => {
                 return res.status(400).json({
                     error_code: 205,
                     error_title: 'Password Error',
-                    error_message: 'Your Password was Incorrect. Try again.'
+                    error_message: 'Your Password was Incorrect. Please try again!'
                 })
             }
 
-            // either good here or catch error in comparison...
+            // either good here or catch error of password comparison...
             return res.status(200).json({
                 success: true,
                 message: 'Login complete!',
-                // saving for later use (assume i will need when pulling msgs etc.)
                 user : {
                     id: expectedUser.id,
                     first_name: expectedUser.first_name,
@@ -165,18 +166,18 @@ const loginUser = async (req, res) => {
 
 // View Messages logic...
 const viewMessages = (req, res) => {
-    const { outgoing_id, incoming_id } = req.query || {} // added for debugging...
+    const { outgoing_id, incoming_id } = req.query || {} // added for debugging... (should be fine now but added protection for empty request)
 
     // error case 1: missing one of the user id's
     if (!outgoing_id || !incoming_id) {
         return res.status(400).json({
             error_code: 301,
-            error_title: 'User validation error',
-            error_message: 'Failed to locate one of the users! Both incoming and outgoing user id required!',
+            error_title: 'User Validation Error',
+            error_message: 'Failed to locate one of the users! Both incoming and outgoing user ids are required!',
         })
     }
 
-    // check if both users exist
+    // check if both users exist...
     const existCheck = 'SELECT id from users WHERE id IN (?, ?)'
     db.query(existCheck, [outgoing_id, incoming_id], (err, users) => {
         if (err) {
@@ -186,7 +187,7 @@ const viewMessages = (req, res) => {
                 error_message: 'An internal error occured while trying to verify user ids. Please try again! ',
             })
         }
-        // see if two valid results were returned...
+        // see if two valid results were returned... if not error...
         if (users.length != 2) {
                 return res.status(400).json({
                 error_code: 303,
@@ -194,10 +195,10 @@ const viewMessages = (req, res) => {
                 error_message: 'One or more of these users do not exist! Try again!',
             })
         }
-        // query to get messages... and need to order them by time...
+        // query to get messages... and need to order them by time so convo makes sense...
         const viewQuery = ` SELECT id, outgoing_id, incoming_id, message, time_created FROM messages WHERE (outgoing_id = ? AND incoming_id = ?) OR (outgoing_id = ? AND incoming_id = ?) ORDER BY time_created ASC `
 
-        // placing inside this query so i dont get that issue again...
+        // placing inside the above query to avoide duplicate response code bug...
         db.query(viewQuery, [outgoing_id, incoming_id, incoming_id, outgoing_id], (err, res2) => {
             if (err) {
                 return res.status(500).json({
@@ -224,7 +225,7 @@ const sendMessage = (req, res) => {
         return res.status(400).json({
             error_code: 401,
             error_title: 'Data Validation Error',
-            error_message: 'Failed to locate one ormore of: outgoing id, incoming id, and message, which are all required elements. Try again!'
+            error_message: 'Failed to locate one or more of: outgoing id, incoming id, and message, which are all required elements. Try again!'
         })
     }
     // check if the user exists just as before for view message... 
@@ -237,7 +238,7 @@ const sendMessage = (req, res) => {
                 error_message: 'An internal error occured while trying to verify user ids. Please try again! ',
             })
         }
-        // see if two valid results were returned and they aren't identical...
+        // see if two valid results were returned...
         if (users.length != 2) {
                 return res.status(400).json({
                 error_code: 403,
@@ -245,10 +246,10 @@ const sendMessage = (req, res) => {
                 error_message: 'One or more of these users do not exist! Try again!',
             })
         }
-        // query to get messages... and need to order them by time...
+        // inserting message query
         const sendQuery = ` INSERT INTO messages (outgoing_id, incoming_id, message) VALUES (?, ?, ?) `
 
-        // placing inside this query so i dont get that issue again...
+        // same format as before to avoid dupe code bug...
         db.query(sendQuery, [outgoing_id, incoming_id, message], (err, res2) => {
             if (err) {
                 return res.status(500).json({
@@ -266,7 +267,7 @@ const sendMessage = (req, res) => {
     })
 }
 
-// to-do: list users logic (other than user who calls this)
+// list all users logic...
 const listUsers = (req, res) =>  {
     const { requester_id } = req.query
 
@@ -285,12 +286,12 @@ const listUsers = (req, res) =>  {
         if (err) {
             return res.status(500).json({
                 error_code: 502,
-                error_title: 'Internal Location Error',
-                error_message: 'An internal error occured when confirming your profile. Try again!',
+                error_title: 'Internal Verification Error',
+                error_message: 'An internal error occured when locating your profile. Try again!',
             })
         }
 
-        // ensure one user was returned by the query (the requester)
+        // ensure only one user was returned by the query (the requester)
         if (users.length != 1) {
             return res.status(500).json({
                 error_code: 503,
@@ -300,7 +301,7 @@ const listUsers = (req, res) =>  {
         }
 
         const listQuery = ` SELECT id, first_name, last_name, email, time_created FROM users WHERE id != ? `
-        // inside original query again to prevent double err code
+        // inside original query again to prevent double res code...
         db.query(listQuery, [requester_id], (err, res2) => {
             if (err) {
                 return res.status(500).json({
@@ -319,6 +320,5 @@ const listUsers = (req, res) =>  {
     })
 }
 
-
-// export
+// export for use in authRoutes...
 module.exports = { registerUser, loginUser, viewMessages, sendMessage, listUsers }

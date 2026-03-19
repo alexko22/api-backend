@@ -1,6 +1,10 @@
-// db connection adapted from sample...
+// config/db.js | alexko22222@gmail.com
+// establishes connection to the MySQL db
+
+// closely adapted from example documentation snippet...
 const mysql = require('mysql2')
 
+// (hidden variables in env file) --> local setup info in ReadME
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
