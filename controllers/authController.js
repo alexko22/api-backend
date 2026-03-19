@@ -266,6 +266,8 @@ const sendMessage = (req, res) => {
     })
 }
 
+// to-do: list users logic (other than user who calls this)
+
 
 // export
 module.exports = { registerUser, loginUser, viewMessages, sendMessage }
