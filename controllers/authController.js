@@ -162,7 +162,59 @@ const loginUser = async (req, res) => {
         }
     })
 }
+
+// View Messages logic...
+const viewMessages = (req, res) => {
+    const { outgoing_id, incoming_id } = req.query || {} // added for debugging...
+
+    // error case 1: missing one of the user id's
+    if (!outgoing_id || !incoming_id) {
+        return res.status(400).json({
+            error_code: 301,
+            error_title: 'User validation error',
+            error_message: 'Failed to locate one of the users! Both incoming and outgoing user id required!',
+        })
+    }
+
+    // check if both users exist
+    const existCheck = 'SELECT id from users WHERE id IN (?, ?)'
+    db.query(existCheck, [outgoing_id, incoming_id], (err, users) => {
+        if (err) {
+            return res.status(500).json({
+                error_code: 302,
+                error_title: 'Internal Verification Error',
+                error_message: 'An internal error occured while trying to verify user ids. Please try again! ',
+            })
+        }
+        // see if two valid results were returned...
+        if (users.length != 2) {
+                return res.status(400).json({
+                error_code: 303,
+                error_title: 'User Verification Failed',
+                error_message: 'One or more of these users do not exist! Try again!',
+            })
+        }
+        // query to get messages... and need to order them by time...
+        const viewQuery = ` SELECT id, outgoing_id, incoming_id, message, time_created FROM messages WHERE (outgoing_id = ? AND incoming_id = ?) OR (outgoing_id = ? AND incoming_id = ?) ORDER BY time_created ASC `
+
+        // placing inside this query so i dont get that issue again...
+        db.query(viewQuery, [outgoing_id, incoming_id, incoming_id, outgoing_id], (err, res2) => {
+            if (err) {
+                return res.status(500).json({
+                    error_code: 304,
+                    error_title: 'Internal Retrieval Error',
+                    error_message: 'An internal error occured when trying to find the requested messages!',
+                })
+            }
+            // else success...
+            return res.status(200).json({
+                success: true,
+                messages: res2
+            })
+        })
+    })
+}
   
 
 // export
-module.exports = { registerUser, loginUser }
+module.exports = { registerUser, loginUser, viewMessages }
