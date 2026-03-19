@@ -99,7 +99,7 @@ const loginUser = async (req, res) => {
 
     // error case 2: email invalid (not an email)
     if (!email.includes('@')) {
-        return res.status(500).json({
+        return res.status(400).json({
             error_code: 202,
             error_title: 'Invalid Email Address',
             error_message: 'This is not a valid email. Email must contain @ character'
@@ -108,19 +108,61 @@ const loginUser = async (req, res) => {
 
     // try to log in and match to existing account (test email and password)
     const loginQuery = 'SELECT * FROM users WHERE email = ?'
+    db.query(loginQuery, [email], async (err, res2) => {
+        if (err) {
+            return res.status(500).json({
+                error_code: 203,
+                error_title: 'Internal Query Error',
+                error_message: 'An internal error occured when trying to find your account. Please try again later.'
+            })
+        }
 
+        // error case 4: account with said email does not exist (need to register first)
+        if (res2.length == 0) {
+            return res.status(400).json({
+                error_code: 204,
+                error_title: 'Email Account Error',
+                error_message: 'An account with this email does not exist. Please register first!'
+            })
+        }
 
+        // save account... then try password in catch else clear...
+        const expectedUser = res2[0]
 
+        try {
+            const passTest = await bcrypt.compare(password, expectedUser.hashed_password)
 
+            // error case: password does not match
+            if (!passTest) {
+                return res.status(400).json({
+                    error_code: 205,
+                    error_title: 'Password Error',
+                    error_message: 'Your Password was Incorrect. Try again.'
+                })
+            }
 
-
-
+            // either good here or catch error in comparison...
+            return res.status(200).json({
+                success: true,
+                message: 'Login complete!',
+                // saving for later use (assume i will need when pulling msgs etc.)
+                user : {
+                    id: expectedUser.id,
+                    first_name: expectedUser.first_name,
+                    last_name: expectedUser.last_name,
+                    email: expectedUser.email
+                }
+            })
+        } catch (error) {
+            return res.status(500).json({
+                error_code: 206,
+                error_title: 'Internal Password Verification Error',
+                error_message: 'An internal error occured when verifying your password... Please try again later!'
+            })
+        }
+    })
 }
   
 
-
-
-
-
 // export
-module.exports = { registerUser }
+module.exports = { registerUser, loginUser }
