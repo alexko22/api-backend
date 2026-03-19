@@ -60,6 +60,13 @@ A more robust design would allow endpoints to derive the acting user from authen
 
 ---
 
+### Running Locally
+1. Clone the repositroy
+2. Install dependencies (npm install; my node modules are just .gitignored)
+3. Open MySQL workbench and make your own databse using the dump file schema
+4. Create a .env file in the root directory with your relevant DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, and PORT values.
+5. Start the server and the API should be running at the relevant localhost!
+
 ### Final Note
-Special thanks to everyone at Giftogram who took the time to speak with me and review my code!
+Special thanks to everyone at Giftogram who took the time to speak with me and review my code!!!
 
