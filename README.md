@@ -61,9 +61,9 @@ A more robust design would allow endpoints to derive the acting user from authen
 ---
 
 ### Running Locally
-1. Clone the repositroy
+1. Clone the repo
 2. Install dependencies (npm install; my node modules are just .gitignored)
-3. Open MySQL workbench and make your own databse using the dump file schema
+3. Open MySQL workbench and make your own database using the dump file schema
 4. Create a .env file in the root directory with your relevant DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, and PORT values.
 5. Start the server and the API should be running at the relevant localhost!
 
