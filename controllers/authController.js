@@ -214,7 +214,58 @@ const viewMessages = (req, res) => {
         })
     })
 }
-  
+
+// Send Message logic...
+const sendMessage = (req, res) => {
+    const { outgoing_id, incoming_id, message } = req.body
+
+    // error case 1: missing one of the elements as before...
+    if (!outgoing_id || !incoming_id || !message) {
+        return res.status(400).json({
+            error_code: 401,
+            error_title: 'Data Validation Error',
+            error_message: 'Failed to locate one ormore of: outgoing id, incoming id, and message, which are all required elements. Try again!'
+        })
+    }
+    // check if the user exists just as before for view message... 
+    const existCheck = 'SELECT id from users WHERE id IN (?, ?)'
+    db.query(existCheck, [outgoing_id, incoming_id], (err, users) => {
+        if (err) {
+            return res.status(500).json({
+                error_code: 402,
+                error_title: 'Internal Verification Error',
+                error_message: 'An internal error occured while trying to verify user ids. Please try again! ',
+            })
+        }
+        // see if two valid results were returned and they aren't identical...
+        if (users.length != 2) {
+                return res.status(400).json({
+                error_code: 403,
+                error_title: 'User Verification Failed',
+                error_message: 'One or more of these users do not exist! Try again!',
+            })
+        }
+        // query to get messages... and need to order them by time...
+        const sendQuery = ` INSERT INTO messages (outgoing_id, incoming_id, message) VALUES (?, ?, ?) `
+
+        // placing inside this query so i dont get that issue again...
+        db.query(sendQuery, [outgoing_id, incoming_id, message], (err, res2) => {
+            if (err) {
+                return res.status(500).json({
+                    error_code: 404,
+                    error_title: 'Internal Insertion Error',
+                    error_message: 'An internal error occured when trying to send the requested message!',
+                })
+            }
+            // else success...
+            return res.status(200).json({
+                success: true,
+                messages: 'message sent successfully!'
+            })
+        })
+    })
+}
+
 
 // export
-module.exports = { registerUser, loginUser, viewMessages }
+module.exports = { registerUser, loginUser, viewMessages, sendMessage }
